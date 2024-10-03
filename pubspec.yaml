@@ -12,6 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8 # Cupertino icons for iOS
+  intl: ^0.17.0
+  google_generative_ai: ^0.4.6
   
 dev_dependencies:
   flutter_test:
@@ -28,6 +30,32 @@ flutter:
     - assets/google.png
     - assets/facebook.png
     - assets/apple.png
+    - assets/explore4.png
+    - assets/bali.png
+    - assets/tokyo.png
+    - assets/paris.png
+    - assets/rome.png
+    - assets/chatbot.png
+    - assets/logo1.png
+    - assets/ai_assistant.png
+    - assets/background.png
+    - assets/avatar_placeholder.png 
+    - assets/kalaw.png
+    - assets/baoji.png
+    - assets/vr.png
+    - assets/egypt.png
+    - assets/video_tour.png
+    - assets/manali.png
+
+
+
+
+
+    
+
+
+
+
 
   # Fonts section (commented out but ready to use)
   # fonts:
