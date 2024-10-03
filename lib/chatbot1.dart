@@ -21,7 +21,7 @@ class _Chatbot1PageState extends State<Chatbot1Page> {
   }
 
   Future<void> _initializeModel() async {
-    const apiKey = 'AIzaSyDB7BOI1LpM3FrhfFUWmWbWjsmijykEKhg';
+    const apiKey = '';
     if (apiKey.isEmpty) {
       stderr.writeln('No GEMINI_API_KEY environment variable');
       return;
