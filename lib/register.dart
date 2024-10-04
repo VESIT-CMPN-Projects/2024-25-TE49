@@ -1,9 +1,65 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 import 'login.dart';
 import 'explore.dart'; // Import ExplorePage
 
 class RegisterPage extends StatelessWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  RegisterPage({Key? key}) : super(key: key); // Removed const keyword
+
+  // Define controllers for the input fields
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> _registerUser(BuildContext context) async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+
+    try {
+      UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      // User registered successfully
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ExplorePage(),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      // Handle errors
+      String message;
+      if (e.code == 'weak-password') {
+        message = 'The password provided is too weak.';
+      } else if (e.code == 'email-already-in-use') {
+        message = 'The account already exists for that email.';
+      } else {
+        message = 'An error occurred. Please try again.';
+      }
+      _showErrorDialog(context, message);
+    }
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Okay'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +105,7 @@ class RegisterPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: TextField(
+                    controller: _usernameController,
                     decoration: InputDecoration(
                       hintText: "Enter username",
                       filled: true,
@@ -67,6 +124,7 @@ class RegisterPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: TextField(
+                    controller: _emailController,
                     decoration: InputDecoration(
                       hintText: "Enter email",
                       filled: true,
@@ -85,6 +143,7 @@ class RegisterPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: TextField(
+                    controller: _phoneController,
                     decoration: InputDecoration(
                       hintText: "Enter phone number",
                       filled: true,
@@ -103,6 +162,7 @@ class RegisterPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: TextField(
+                    controller: _passwordController,
                     obscureText: true,
                     decoration: InputDecoration(
                       hintText: "Password",
@@ -128,13 +188,7 @@ class RegisterPage extends StatelessWidget {
                     height: 60,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Navigate to ExplorePage when user registers successfully
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ExplorePage(),
-                          ),
-                        );
+                        _registerUser(context); // Call the register function
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor:

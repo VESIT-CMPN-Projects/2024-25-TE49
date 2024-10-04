@@ -17,13 +17,13 @@ class _AccountPageState extends State<AccountPage> {
   bool isPasswordEditable = false;
 
   final TextEditingController _usernameController =
-      TextEditingController(text: 'JohnDoe');
+      TextEditingController(text: 'Himanshu');
   final TextEditingController _emailController =
-      TextEditingController(text: 'john@example.com');
+      TextEditingController(text: 'hmenghrajani8@gmail.com');
   final TextEditingController _phoneController =
-      TextEditingController(text: '1234567890');
+      TextEditingController(text: '8097258713');
   final TextEditingController _passwordController =
-      TextEditingController(text: 'password');
+      TextEditingController(text: '#12345678');
 
   @override
   Widget build(BuildContext context) {
@@ -116,16 +116,23 @@ class _AccountPageState extends State<AccountPage> {
             const SizedBox(height: 20),
 
             // Password
-            buildEditableField(
-              label: 'Password',
-              isEditable: isPasswordEditable,
-              controller: _passwordController,
-              obscureText: true,
-              onEditToggle: () {
-                setState(() {
-                  isPasswordEditable = !isPasswordEditable;
-                });
-              },
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: TextField(
+                controller: _passwordController,
+                obscureText: true, // Obscure text as dots
+                enabled: false, // Set to false to disable editing
+                decoration: InputDecoration(
+                  hintText: "........",
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  suffixIcon: const Icon(Icons.lock),
+                ),
+              ),
             ),
 
             const Spacer(),
