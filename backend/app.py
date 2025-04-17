@@ -59,7 +59,7 @@ def detect_mood(text):
 # Google Gemini API Setup
 # --------------------------
 # Replace with your actual Gemini API key
-GEMINI_API_KEY = "AIzaSyBiW3vNe8BwYVw38KZl-i6SrTpZKcxZsTM"
+GEMINI_API_KEY = "API_KEY"
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --------------------------
@@ -258,7 +258,7 @@ def handle_travel_options():
             logger.error("Missing required fields: origin or destination")
             return jsonify({"error": "Missing origin or destination"}), 400
 
-        router = GeoapifyRouter(api_key="61b4aa1e77674b8e89f7e60d2ce89847")
+        router = GeoapifyRouter(api_key="API_KEY")
         start = router.get_coordinates(data['origin'])
         end = router.get_coordinates(data['destination'])
         if not start or not end:
