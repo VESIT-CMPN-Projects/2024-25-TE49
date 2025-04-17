@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'home.dart';
 import 'chatbot.dart';
 import 'account.dart';
-import 'virtual.dart';
+import 'mood.dart';
 import 'trips.dart'; // Import the trips.dart file
+import 'tour.dart';
 
 class ExplorePage extends StatelessWidget {
   @override
@@ -81,7 +82,11 @@ class ExplorePage extends StatelessWidget {
                         SizedBox(height: 10),
                         ElevatedButton(
                           onPressed: () {
-                            // Add action here
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => TourPage()),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orangeAccent,
@@ -251,7 +256,7 @@ class ExplorePage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                RoutesPage()), // Navigate to TripsPage
+                                TripsPage()), // Navigate to TripsPage
                       );
                     },
                     child: _buildNavItem(Icons.luggage, 'Trips'),
@@ -262,7 +267,8 @@ class ExplorePage extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => VirtualPage()),
+                        MaterialPageRoute(
+                            builder: (context) => MoodTravelPlanner()),
                       );
                     },
                     child: _buildNavItem(Icons.vrpano_rounded, 'VR Tour'),

@@ -1,394 +1,233 @@
 import 'package:flutter/material.dart';
-import 'chatbot.dart';
-import 'account.dart';
-import 'explore.dart';
-import 'virtual.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class RoutesPage extends StatefulWidget {
+class TripsPage extends StatefulWidget {
   @override
-  _RoutesPageState createState() => _RoutesPageState();
+  _TripsPageState createState() => _TripsPageState();
 }
 
-class _RoutesPageState extends State<RoutesPage> {
-  final _startLocationController = TextEditingController();
-  final _destinationController = TextEditingController();
-  final _travelTimeController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  String _selectedMode = 'car'; // Default mode
-  List<TextEditingController> _stopControllers = [];
+class _TripsPageState extends State<TripsPage> {
+  final TextEditingController _startController = TextEditingController();
+  final TextEditingController _destController = TextEditingController();
+  List<TravelOption> _options = [];
+  int _selectedIndex = 0;
+  bool _isLoading = false;
+  String _errorMessage = '';
 
-  @override
-  void dispose() {
-    _startLocationController.dispose();
-    _destinationController.dispose();
-    _travelTimeController.dispose();
-    for (var controller in _stopControllers) {
-      controller.dispose();
+  Future<void> _searchRoutes() async {
+    if (_startController.text.isEmpty || _destController.text.isEmpty) {
+      setState(() => _errorMessage = 'Please enter both locations');
+      return;
     }
-    super.dispose();
-  }
 
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        _travelTimeController.text = picked.format(context);
-      });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+      _options = [];
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse(
+            'http://172.20.10.2:5004/api/travel-options'), // Updated IP address
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'origin': _startController.text,
+          'destination': _destController.text,
+          'modes': ['driving', 'walking', 'bus', 'train', 'flight']
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _options = (data['all_options'] as List)
+              .map((opt) => TravelOption.fromJson(opt))
+              .toList();
+          _selectedIndex = _options.isNotEmpty ? 0 : -1;
+        });
+      } else {
+        setState(() => _errorMessage =
+            'Error: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Failed to connect: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
-  }
-
-  void _addStop() {
-    setState(() {
-      _stopControllers.add(TextEditingController());
-    });
-  }
-
-  void _removeStop(int index) {
-    setState(() {
-      _stopControllers[index].dispose();
-      _stopControllers.removeAt(index);
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Chart Your Journey'),
-        backgroundColor: Colors.blue,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Form(
-            key: _formKey,
+      appBar: AppBar(title: Text('Travel Options')),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInputField(
-                  'Start Location',
-                  _startLocationController,
-                  'Enter start location',
-                  'e.g., New York City',
-                ),
-                SizedBox(height: 20),
-                _buildInputField(
-                  'Your Destination',
-                  _destinationController,
-                  'Enter destination',
-                  'e.g., Los Angeles',
-                ),
-                SizedBox(height: 20),
-                _buildTimePicker(),
-                SizedBox(height: 20),
-                _buildStopsSection(),
-                SizedBox(height: 20),
-                Text(
-                  'Select Mode of Transportation',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 10),
-                _buildModeSelection(),
-                SizedBox(height: 40),
-                _buildSubmitButton(),
-              ],
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
-    );
-  }
-
-  Widget _buildInputField(
-    String label,
-    TextEditingController controller,
-    String hintText,
-    String errorText,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 10),
-        TextFormField(
-          controller: controller,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: hintText,
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter $errorText';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimePicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Time of Travel',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 10),
-        TextFormField(
-          controller: _travelTimeController,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            suffixIcon: Icon(Icons.access_time),
-          ),
-          readOnly: true,
-          onTap: () => _selectTime(context),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please select a time';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStopsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Stops',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            ElevatedButton(
-              onPressed: _addStop,
-              child: Text('Add Stop'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 10),
-        ..._stopControllers.asMap().entries.map((entry) {
-          int idx = entry.key;
-          var controller = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Enter stop ${idx + 1}',
-                    ),
+                TextField(
+                  controller: _startController,
+                  decoration: InputDecoration(
+                    labelText: 'From',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.remove_circle_outline),
-                  onPressed: () => _removeStop(idx),
-                  color: Colors.red,
+                SizedBox(height: 10),
+                TextField(
+                  controller: _destController,
+                  decoration: InputDecoration(
+                    labelText: 'To',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
+                SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _searchRoutes,
+                  child: _isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text('Find Routes'),
+                ),
+                if (_errorMessage.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Text(
+                      _errorMessage,
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
               ],
             ),
-          );
-        }).toList(),
-      ],
-    );
-  }
-
-  Widget _buildModeSelection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildModeOption('car', Icons.directions_car),
-        _buildModeOption('walk', Icons.directions_walk),
-        _buildModeOption('bike', Icons.directions_bike),
-        _buildModeOption('bus', Icons.directions_bus),
-      ],
-    );
-  }
-
-  Widget _buildModeOption(String mode, IconData icon) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedMode = mode;
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: _selectedMode == mode ? Colors.blue : Colors.grey[200],
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          color: _selectedMode == mode ? Colors.white : Colors.black,
-          size: 30,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    return Center(
-      child: ElevatedButton(
-        onPressed: () {
-          if (_formKey.currentState?.validate() == true) {
-            _showTripSummary();
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(horizontal: 60, vertical: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
           ),
-          backgroundColor: Colors.blue,
-        ),
-        child: Text(
-          'Submit',
-          style: TextStyle(fontSize: 18),
-        ),
+          if (_options.isNotEmpty) _buildMap(),
+          if (_options.isEmpty && !_isLoading)
+            Expanded(
+              child: Center(child: Text('No routes found')),
+            ),
+          if (_options.isNotEmpty) Expanded(child: _buildOptionsList()),
+        ],
       ),
     );
   }
 
-  void _showTripSummary() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Trip Summary'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('From: ${_startLocationController.text}'),
-              Text('To: ${_destinationController.text}'),
-              Text('Time: ${_travelTimeController.text}'),
-              if (_stopControllers.isNotEmpty) ...[
-                SizedBox(height: 10),
-                Text('Stops:'),
-                ..._stopControllers.asMap().entries.map((entry) {
-                  int idx = entry.key;
-                  var controller = entry.value;
-                  return Text('  ${idx + 1}. ${controller.text}');
-                }).toList(),
-              ],
-              SizedBox(height: 10),
-              Text('Mode: $_selectedMode'),
+  Widget _buildMap() {
+    final option = _options[_selectedIndex];
+    // Directly use the LatLng coordinates list
+    final points = option.coordinates;
+
+    return SizedBox(
+      height: 300,
+      child: FlutterMap(
+        options: MapOptions(
+          center: points.isNotEmpty ? points[0] : const LatLng(0, 0),
+          zoom: points.length > 2 ? 10 : 5,
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          ),
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: points,
+                color: Color(
+                    int.parse(option.routeColor.replaceFirst('#', '0xff'))),
+                strokeWidth: option.mode == 'flight' ? 2 : 4,
+              ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
+          MarkerLayer(
+            markers: [
+              if (points.isNotEmpty)
+                Marker(
+                  point: points.first,
+                  builder: (ctx) =>
+                      Icon(Icons.location_pin, color: Colors.green, size: 40),
+                ),
+              if (points.isNotEmpty)
+                Marker(
+                  point: points.last,
+                  builder: (ctx) =>
+                      Icon(Icons.location_pin, color: Colors.red, size: 40),
+                ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: Offset(0, -5),
+  Widget _buildOptionsList() {
+    return ListView.builder(
+      itemCount: _options.length,
+      itemBuilder: (ctx, i) => Card(
+        color: i == _selectedIndex
+            ? Color(int.parse('0x11${_options[i].routeColor.substring(1)}'))
+            : null,
+        child: ListTile(
+          leading:
+              Text(_options[i].transportIcon, style: TextStyle(fontSize: 24)),
+          title: Text(_options[i].mode.toUpperCase()),
+          subtitle: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('${_options[i].distance} km'),
+              Text('${_options[i].duration} mins'),
+              Text('₹${_options[i].fare}'),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem('assets/logo1.png', 'Home', '/home'),
-            _buildNavItem('assets/chatbot.png', 'WanderBot', '/chatbot'),
-            _buildNavItem(Icons.luggage, 'Trips', '/routes', isSelected: true),
-            _buildNavItem(Icons.vrpano_rounded, 'VR Tour', '/vr'),
-            _buildNavItem(Icons.person_outline, 'Account', '/account'),
-          ],
+          onTap: () => setState(() => _selectedIndex = i),
         ),
       ),
     );
   }
+}
 
-  Widget _buildNavItem(dynamic icon, String label, String route,
-      {bool isSelected = false}) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          if (route != '/routes') {
-            switch (route) {
-              case '/home':
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => ExplorePage()),
-                );
-                break;
-              case '/chatbot':
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => ChatbotPage()),
-                );
-                break;
-              case '/vr':
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => VirtualPage()),
-                );
-                break;
-              case '/account':
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => AccountPage()),
-                );
-                break;
-            }
+class TravelOption {
+  final String mode;
+  final String transportIcon;
+  final double distance;
+  final int duration;
+  final int fare;
+  final String routeColor;
+  final List<LatLng> coordinates;
+
+  TravelOption({
+    required this.mode,
+    required this.transportIcon,
+    required this.distance,
+    required this.duration,
+    required this.fare,
+    required this.routeColor,
+    required this.coordinates,
+  });
+
+  factory TravelOption.fromJson(Map<String, dynamic> json) {
+    return TravelOption(
+      mode: json['mode'],
+      transportIcon: json['transport_icon'],
+      distance: json['distance_km']?.toDouble() ?? 0.0,
+      duration: json['duration_mins']?.toInt() ?? 0,
+      fare: json['total_fare']?.toInt() ?? 0,
+      routeColor: json['route_color'] ?? '#000000',
+      coordinates: (json['coordinates'] as List).map((coord) {
+        try {
+          if (coord is List && coord.length >= 2) {
+            return LatLng(
+              (coord[0] as num).toDouble(),
+              (coord[1] as num).toDouble(),
+            );
           }
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            icon is String
-                ? Image.asset(icon, width: 24, height: 24)
-                : Icon(icon,
-                    color: isSelected ? Colors.blue : Colors.black, size: 24),
-            SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.blue : Colors.black,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
+          return const LatLng(0.0, 0.0);
+        } catch (e) {
+          print('Coordinate parse error: $e');
+          return const LatLng(0.0, 0.0);
+        }
+      }).toList(),
     );
   }
 }

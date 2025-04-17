@@ -16,6 +16,12 @@ dependencies:
   google_generative_ai: ^0.4.6
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
+  http: ^1.2.2
+  geolocator: ^9.0.2
+  google_maps_flutter: ^2.2.5
+  flutter_dotenv: ^5.2.1
+  flutter_map: ^5.0.0
+  latlong2: ^0.9.0
   
 dev_dependencies:
   flutter_test:
@@ -48,6 +54,7 @@ flutter:
     - assets/egypt.png
     - assets/video_tour.png
     - assets/manali.png
+    - .env
 
 
 
