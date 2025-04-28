@@ -17,8 +17,8 @@ class _MoodTravelPlannerState extends State<MoodTravelPlanner> {
   bool isLoading = false;
   bool isLoadingItinerary = false;
 
-  final String moodApiUrl = "http://127.0.0.1:5004/api/mood-travel";
-  final String itineraryApiUrl = "http://127.0.0.1:5004/api/mood-itinerary";
+  final String moodApiUrl = "http://10.91.223.113:5004/api/mood-travel";
+  final String itineraryApiUrl = "http://10.91.223.113:5004/api/mood-itinerary";
 
   // Expanded list of mood types for more interesting results
   final Map<String, IconData> moodIcons = {

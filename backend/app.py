@@ -39,27 +39,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # --------------------------
-# Setup NLTK for Mood Detection
-# --------------------------
-nltk.download('vader_lexicon')
-sia = SentimentIntensityAnalyzer()
-
-def detect_mood(text):
-    """Detect mood using VADER sentiment analysis."""
-    scores = sia.polarity_scores(text)
-    compound = scores["compound"]
-    if compound >= 0.5:
-        return "happy"
-    elif -0.2 < compound < 0.5:
-        return "relaxed"
-    else:
-        return "adventurous"
-
-# --------------------------
 # Google Gemini API Setup
 # --------------------------
 # Replace with your actual Gemini API key
-GEMINI_API_KEY = "API_KEY"
+GEMINI_API_KEY = ""
 genai.configure(api_key=GEMINI_API_KEY)
 
 # --------------------------
@@ -69,7 +52,8 @@ MOOD_DESTINATIONS = {
     "happy": [
         "Goa, India", "Disneyland, USA", "Paris, France", "Bali, Indonesia",
         "Barcelona, Spain", "Sydney, Australia", "Rio de Janeiro, Brazil",
-        "Las Vegas, USA", "Amsterdam, Netherlands", "Bangkok, Thailand", "Stuttgart, Germany", "Berlin, Germany"
+        "Las Vegas, USA", "Amsterdam, Netherlands", "Bangkok, Thailand",
+        "Stuttgart, Germany", "Berlin, Germany"
     ],
     "relaxed": [
         "Kerala Backwaters, India", "Maldives", "Santorini, Greece",
@@ -81,8 +65,94 @@ MOOD_DESTINATIONS = {
         "Patagonia, Chile", "Grand Canyon, USA", "Banff, Canada",
         "Queenstown, New Zealand", "Alaska, USA", "Mount Kilimanjaro, Tanzania",
         "Iceland"
+    ],
+    "romantic": [
+        "Paris, France", "Venice, Italy", "Kyoto, Japan",
+        "Amalfi Coast, Italy", "Santorini, Greece", "Prague, Czech Republic",
+        "Bora Bora, French Polynesia", "Charleston, South Carolina, USA"
+    ],
+    "curious": [
+        "Tokyo, Japan", "Istanbul, Turkey", "Cairo, Egypt",
+        "Marrakech, Morocco", "Mexico City, Mexico", "Jerusalem, Israel",
+        "Berlin, Germany", "Cusco, Peru"
+    ],
+    "energetic": [
+        "Las Vegas, USA", "Ibiza, Spain", "Berlin, Germany",
+        "Miami, USA", "Singapore", "Seoul, South Korea",
+        "Hong Kong", "New York City, USA"
+    ],
+    "peaceful": [
+        "Kyoto, Japan", "Norwegian Fjords, Norway", "Lake District, UK",
+        "Banff, Canada", "Ubud, Bali, Indonesia", "Kauai, Hawaii, USA",
+        "Luang Prabang, Laos", "Hallstatt, Austria"
+    ],
+    "creative": [
+        "Berlin, Germany", "Portland, Oregon, USA", "Barcelona, Spain",
+        "Melbourne, Australia", "Copenhagen, Denmark", "Austin, Texas, USA",
+        "Kyoto, Japan", "Mexico City, Mexico"
+    ],
+    "cultural": [
+        "Rome, Italy", "Kyoto, Japan", "Istanbul, Turkey",
+        "Varanasi, India", "Florence, Italy", "Fez, Morocco",
+        "Jaipur, India", "Cusco, Peru"
+    ],
+    "reflective": [
+        "Scottish Highlands, UK", "Sedona, Arizona, USA", "Big Sur, California, USA",
+        "Norwegian Fjords, Norway", "Camino de Santiago, Spain",
+        "Varanasi, India", "Bagan, Myanmar", "Joshua Tree, California, USA"
+    ],
+    "stressed": [
+        "Bali, Indonesia", "Sedona, Arizona, USA", "Costa Rica",
+        "Koh Samui, Thailand", "Amalfi Coast, Italy", "Blue Lagoon, Iceland",
+        "Tulum, Mexico", "Hawaii, USA"
+    ],
+    "excited": [
+        "Tokyo, Japan", "New York City, USA", "Las Vegas, USA",
+        "Dubai, UAE", "London, UK", "Orlando, Florida, USA",
+        "Barcelona, Spain", "Hong Kong"
+    ],
+    "spiritual": [
+        "Bali, Indonesia", "Varanasi, India", "Camino de Santiago, Spain",
+        "Kyoto, Japan", "Sedona, Arizona, USA", "Angkor Wat, Cambodia",
+        "Kathmandu, Nepal", "Rishikesh, India"
+    ],
+    "nostalgic": [
+        "Havana, Cuba", "New Orleans, USA", "Lisbon, Portugal",
+        "Kyoto, Japan", "Rome, Italy", "Charleston, South Carolina, USA",
+        "Venice, Italy", "Vienna, Austria"
+    ],
+    "luxurious": [
+        "Monaco", "Dubai, UAE", "Santorini, Greece", "Maldives",
+        "French Riviera, France", "Amalfi Coast, Italy",
+        "Bora Bora, French Polynesia", "St. Moritz, Switzerland"
     ]
 }
+
+# --------------------------
+# Setup NLTK for Mood Detection
+# --------------------------
+nltk.download('vader_lexicon')
+sia = SentimentIntensityAnalyzer()
+
+def detect_mood(text: str) -> str:
+    """
+    If the user text exactly matches a mood key, use it.
+    Otherwise fallback to VADER sentiment analysis.
+    """
+    key = text.strip().lower()
+    if key in MOOD_DESTINATIONS:
+        logger.info(f"User-specified mood: {key}")
+        return key
+
+    scores = sia.polarity_scores(text)
+    compound = scores["compound"]
+    logger.debug(f"VADER scores: {scores}")
+    if compound >= 0.5:
+        return "happy"
+    elif compound > -0.2:
+        return "relaxed"
+    else:
+        return "adventurous"
 
 # --------------------------
 # Geoapify Router Class
@@ -92,52 +162,32 @@ class GeoapifyRouter:
         self.api_key = api_key
         self.travel_options = {
             'driving': {
-                'color': '#F44336',
-                'icon': '🚗',
-                'speed': 40,
-                'base_fare': 0,
-                'fare_per_km': 10.0,
-                'toll_charge': 1.5
+                'color': '#F44336', 'icon': '🚗', 'speed': 40,
+                'base_fare': 0, 'fare_per_km': 10.0, 'toll_charge': 1.5
             },
             'walking': {
-                'color': '#4CAF50',
-                'icon': '🚶',
-                'speed': 5,
-                'base_fare': 0,
-                'fare_per_km': 0
+                'color': '#4CAF50', 'icon': '🚶', 'speed': 5,
+                'base_fare': 0, 'fare_per_km': 0
             },
             'cycling': {
-                'color': '#2196F3',
-                'icon': '🚲',
-                'speed': 12,
-                'base_fare': 0,
-                'fare_per_km': 0
+                'color': '#2196F3', 'icon': '🚲', 'speed': 12,
+                'base_fare': 0, 'fare_per_km': 0
             },
             'bus': {
-                'color': '#FF9800',
-                'icon': '🚌',
-                'speed': 30,
-                'base_fare': 10,
-                'fare_per_km': 1.5
+                'color': '#FF9800', 'icon': '🚌', 'speed': 30,
+                'base_fare': 10, 'fare_per_km': 1.5
             },
             'train': {
-                'color': '#9C27B0',
-                'icon': '🚆',
-                'speed': 60,
-                'base_fare': 20,
-                'fare_per_km': 1.0
+                'color': '#9C27B0', 'icon': '🚆', 'speed': 60,
+                'base_fare': 20, 'fare_per_km': 1.0
             },
             'flight': {
-                'color': '#3F51B5',
-                'icon': '✈️',
-                'speed': 600,
-                'base_fare': 2500,
-                'fare_per_km': 3.0,
-                'min_time': 90
+                'color': '#3F51B5', 'icon': '✈️', 'speed': 600,
+                'base_fare': 2500, 'fare_per_km': 3.0, 'min_time': 90
             }
         }
 
-    def get_coordinates(self, location):
+    def get_coordinates(self, location: str):
         try:
             logger.debug(f"Geocoding: {location}")
             url = "https://api.geoapify.com/v1/geocode/search"
@@ -146,60 +196,48 @@ class GeoapifyRouter:
                 "apiKey": self.api_key,
                 "limit": 1
             }
-            response = requests.get(url, params=params)
-            data = response.json()
+            resp = requests.get(url, params=params)
+            data = resp.json()
             if data.get("features"):
-                feature = data["features"][0]
-                props = feature.get("properties", {})
-                lat, lon = props.get("lat"), props.get("lon")
-                if lat and lon:
-                    logger.info(f"Resolved {location} → ({lat}, {lon})")
-                    return (float(lat), float(lon))
-            logger.warning(f"No coordinates found for {location}")
+                props = data["features"][0].get("properties", {})
+                return float(props.get("lat")), float(props.get("lon"))
+            logger.warning(f"No coordinates for {location}")
             return None
         except Exception as e:
-            logger.error(f"Geocoding error: {str(e)}")
+            logger.error(f"Geocoding error: {e}")
             return None
 
-    def calculate_distance(self, point1, point2):
-        """Calculate distance between two points using Haversine formula."""
+    def calculate_distance(self, p1, p2):
         try:
-            lat1, lon1 = math.radians(point1[0]), math.radians(point1[1])
-            lat2, lon2 = math.radians(point2[0]), math.radians(point2[1])
+            lat1, lon1 = map(math.radians, p1)
+            lat2, lon2 = map(math.radians, p2)
             dlat, dlon = lat2 - lat1, lon2 - lon1
-            a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+            a = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
             c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-            distance = 6371 * c  # Earth radius in km
-            logger.debug(f"Distance calculated: {distance:.2f} km")
-            return distance
+            return 6371 * c
         except Exception as e:
-            logger.error(f"Distance calculation failed: {str(e)}")
+            logger.error(f"Distance calc failed: {e}")
             return None
 
     def get_route(self, start, end, mode):
-        """Get route details for a given travel mode."""
         try:
-            logger.info(f"Processing {mode} route from {start} to {end}")
+            logger.info(f"Routing {mode} from {start} to {end}")
             if mode == 'flight':
-                distance = self.calculate_distance(start, end)
-                if not distance or distance < 200:
-                    logger.warning("Flight not available for short distance")
+                dist = self.calculate_distance(start, end)
+                if not dist or dist < 200:
                     return None
-                duration = self.travel_options['flight']['min_time'] + (distance / 650) * 60
-                fare = self.travel_options['flight']['base_fare'] + (distance * self.travel_options['flight']['fare_per_km'])
+                dur = self.travel_options['flight']['min_time'] + (dist/650)*60
+                fare = self.travel_options['flight']['base_fare'] + dist*self.travel_options['flight']['fare_per_km']
                 return {
-                    'coordinates': [
-                        [float(start[0]), float(start[1])],
-                        [float(end[0]), float(end[1])]
-                    ],
-                    'distance_km': round(distance, 2),
-                    'duration_mins': round(duration),
+                    'coordinates': [[start[0], start[1]], [end[0], end[1]]],
+                    'distance_km': round(dist, 2),
+                    'duration_mins': round(dur),
                     'total_fare': round(fare),
                     'mode': 'flight',
                     'route_color': self.travel_options['flight']['color'],
                     'transport_icon': self.travel_options['flight']['icon']
                 }
-            # For non-flight modes, use Geoapify routing API
+
             profile = 'drive' if mode in ['driving', 'bus'] else mode
             url = "https://api.geoapify.com/v1/routing"
             params = {
@@ -207,143 +245,108 @@ class GeoapifyRouter:
                 "mode": profile,
                 "apiKey": self.api_key
             }
-            logger.debug(f"Routing request: {url} with params {params}")
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            logger.debug(f"Routing response: {data}")
-            if data.get('features'):
-                feature = data['features'][0]
-                properties = feature.get('properties', {})
-                geometry = feature.get('geometry', {})
-                distance = properties.get('distance', 0) / 1000  # in km
-                duration = properties.get('time', 0) / 60  # in minutes
-                coordinates = [[coord[0], coord[1]] for coord in geometry.get('coordinates', [])]
-                mode_config = self.travel_options[mode]
-                fare = mode_config['base_fare'] + (distance * mode_config['fare_per_km'])
-                if mode == 'driving':
-                    fare += (distance // 200) * mode_config['toll_charge']
-                return {
-                    'coordinates': coordinates,
-                    'distance_km': round(distance, 2),
-                    'duration_mins': round(duration),
-                    'total_fare': round(fare),
-                    'mode': mode,
-                    'route_color': mode_config['color'],
-                    'transport_icon': mode_config['icon']
-                }
-            logger.warning(f"No route features found for {mode}")
-            return None
+            resp = requests.get(url, params=params)
+            resp.raise_for_status()
+            feat = resp.json().get('features', [])[0]
+            props = feat.get('properties', {})
+            geom = feat.get('geometry', {})
+            dist = props.get('distance', 0) / 1000
+            dur = props.get('time', 0) / 60
+            coords = [[c[0], c[1]] for c in geom.get('coordinates', [])]
+            cfg = self.travel_options[mode]
+            fare = cfg['base_fare'] + dist*cfg['fare_per_km']
+            if mode == 'driving':
+                fare += (dist//200)*cfg['toll_charge']
+            return {
+                'coordinates': coords,
+                'distance_km': round(dist, 2),
+                'duration_mins': round(dur),
+                'total_fare': round(fare),
+                'mode': mode,
+                'route_color': cfg['color'],
+                'transport_icon': cfg['icon']
+            }
         except Exception as e:
-            logger.error(f"Route processing failed for {mode}: {str(e)}")
+            logger.error(f"Routing error for {mode}: {e}")
             return None
 
 # --------------------------
 # API Endpoints
 # --------------------------
-
 @app.route('/api/travel-options', methods=['POST', 'OPTIONS'])
 def handle_travel_options():
-    logger.debug("Received /api/travel-options request")
     if request.method == 'OPTIONS':
-        response = jsonify({"message": "Preflight accepted"})
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add("Access-Control-Allow-Headers", "*")
-        response.headers.add("Access-Control-Allow-Methods", "*")
-        return response
+        resp = jsonify({"message": "Preflight accepted"})
+        resp.headers.add("Access-Control-Allow-Origin", "*")
+        resp.headers.add("Access-Control-Allow-Headers", "*")
+        resp.headers.add("Access-Control-Allow-Methods", "*")
+        return resp
 
-    try:
-        data = request.get_json(silent=True) or {}
-        if not all(field in data for field in ['origin', 'destination']):
-            logger.error("Missing required fields: origin or destination")
-            return jsonify({"error": "Missing origin or destination"}), 400
+    data = request.get_json(silent=True) or {}
+    if not all(k in data for k in ('origin', 'destination')):
+        return jsonify({"error": "Missing origin or destination"}), 400
 
-        router = GeoapifyRouter(api_key="API_KEY")
-        start = router.get_coordinates(data['origin'])
-        end = router.get_coordinates(data['destination'])
-        if not start or not end:
-            logger.error("Could not geocode locations")
-            return jsonify({"error": "Could not geocode locations"}), 400
+    router = GeoapifyRouter(api_key="")
+    start = router.get_coordinates(data['origin'])
+    end = router.get_coordinates(data['destination'])
+    if not start or not end:
+        return jsonify({"error": "Could not geocode locations"}), 400
 
-        modes = data.get('modes', ['driving', 'walking', 'bus', 'train', 'flight'])
-        options = []
-        for mode in modes:
-            if mode in router.travel_options:
-                route = router.get_route(start, end, mode)
-                if route:
-                    options.append(route)
-                    logger.debug(f"Added {mode} option")
-                else:
-                    logger.debug(f"Skipped {mode} - no valid route found")
-            else:
-                logger.warning(f"Ignored invalid mode: {mode}")
-        logger.info(f"Returning {len(options)} travel options")
-        response = jsonify({
-            "origin": data['origin'],
-            "destination": data['destination'],
-            "all_options": options
-        })
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        return response
-    except Exception as e:
-        logger.error(f"Server error in /api/travel-options: {str(e)}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
+    modes = data.get('modes', ['driving', 'walking', 'bus', 'train', 'flight'])
+    opts = []
+    for m in modes:
+        if m in router.travel_options:
+            r = router.get_route(start, end, m)
+            if r:
+                opts.append(r)
+    resp = jsonify({
+        "origin": data['origin'],
+        "destination": data['destination'],
+        "all_options": opts
+    })
+    resp.headers.add("Access-Control-Allow-Origin", "*")
+    return resp
 
 @app.route('/api/mood-travel', methods=['POST'])
 def mood_travel():
-    """
-    Endpoint that detects the mood from input text and returns
-    an expanded list of travel destination suggestions.
-    """
-    try:
-        data = request.get_json(silent=True) or {}
-        user_text = data.get("text", "")
-        if not user_text.strip():
-            return jsonify({"error": "Text input is required"}), 400
+    data = request.get_json(silent=True) or {}
+    text = data.get("text", "")
+    if not text.strip():
+        return jsonify({"error": "Text input is required"}), 400
 
-        mood = detect_mood(user_text)
-        destinations = MOOD_DESTINATIONS.get(mood, [])
-        logger.info(f"Detected mood: {mood}. Returning {len(destinations)} destinations.")
-        return jsonify({
-            "mood": mood,
-            "destinations": destinations
-        })
-    except Exception as e:
-        logger.error(f"Error in /api/mood-travel: {str(e)}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
+    mood = detect_mood(text)
+    dests = MOOD_DESTINATIONS.get(mood, [])
+    return jsonify({
+        "mood": mood,
+        "destinations": dests
+    })
 
 @app.route('/api/mood-itinerary', methods=['POST'])
 def mood_itinerary():
-    """
-    Endpoint that generates a detailed itinerary for a given destination,
-    mood, and duration (in days) using the Google Gemini API.
-    """
+    data = request.get_json(silent=True) or {}
+    mood = data.get("mood", "").lower()
+    dest = data.get("destination", "")
+    days = data.get("days", 3)
+    if not dest:
+        return jsonify({"error": "Destination is required"}), 400
+
+    prompt = (
+        f"Create a detailed {days}-day travel itinerary for {dest} "
+        f"that suits a {mood} mood. Include daily activities, food recommendations, "
+        "and best times to visit popular spots."
+    )
     try:
-        data = request.get_json(silent=True) or {}
-        mood = data.get("mood", "").lower()
-        destination = data.get("destination", "")
-        days = data.get("days", 3)  # Default to 3-day itinerary
-        if not destination:
-            return jsonify({"error": "Destination is required"}), 400
-
-        prompt = (f"Create a detailed {days}-day travel itinerary for {destination} "
-                  f"that suits a {mood} mood. Include daily activities, food recommendations, "
-                  f"and best times to visit popular spots.")
-        logger.debug(f"Gemini prompt: {prompt}")
-        try:
-            response = genai.GenerativeModel("gemini-2.0-flash").generate_content(prompt)
-            itinerary = response.text
-        except Exception as ge:
-            logger.error(f"Gemini API error: {str(ge)}")
-            return jsonify({"error": "Failed to generate itinerary", "details": str(ge)}), 500
-
-        return jsonify({
-            "destination": destination,
-            "itinerary": itinerary
-        })
+        gen = genai.GenerativeModel("gemini-2.0-flash")
+        resp = gen.generate_content(prompt)
+        itinerary = resp.text
     except Exception as e:
-        logger.error(f"Error in /api/mood-itinerary: {str(e)}", exc_info=True)
-        return jsonify({"error": "Internal server error"}), 500
+        logger.error(f"Gemini API error: {e}")
+        return jsonify({"error": "Failed to generate itinerary", "details": str(e)}), 500
+
+    return jsonify({
+        "destination": dest,
+        "itinerary": itinerary
+    })
 
 # --------------------------
 # Run the App

@@ -19,7 +19,7 @@ class _AccountPageState extends State<AccountPage> {
   final TextEditingController _usernameController =
       TextEditingController(text: 'Himanshu');
   final TextEditingController _emailController =
-      TextEditingController(text: 'hmenghrajani8@gmail.com');
+      TextEditingController(text: 'hnm@gmail.com');
   final TextEditingController _phoneController =
       TextEditingController(text: '8097258713');
   final TextEditingController _passwordController =

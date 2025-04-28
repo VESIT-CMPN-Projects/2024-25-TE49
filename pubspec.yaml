@@ -22,6 +22,9 @@ dependencies:
   flutter_dotenv: ^5.2.1
   flutter_map: ^5.0.0
   latlong2: ^0.9.0
+  google_fonts: ^5.1.0  # For custom fonts
+  flutter_svg: ^2.0.7  # For SVG support
+  cached_network_image: ^3.2.3
   
 dev_dependencies:
   flutter_test:

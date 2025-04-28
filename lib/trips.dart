@@ -32,7 +32,7 @@ class _TripsPageState extends State<TripsPage> {
     try {
       final response = await http.post(
         Uri.parse(
-            'http://172.20.10.2:5004/api/travel-options'), // Updated IP address
+            'http://10.91.223.113:5004/api/travel-options'), // Updated IP address
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'origin': _startController.text,
